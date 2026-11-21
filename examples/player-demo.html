@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BGM再生デモ</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #16181d; color: #e3e6ec; padding: 24px; line-height: 1.7; }
+  button { padding: 6px 14px; margin-right: 6px; }
+  code { background: #252932; padding: 1px 5px; border-radius: 4px; }
+</style>
+<script src="../engine/bgm-engine.js"></script>
+</head>
+<body>
+<h1>BGM再生デモ（ゲームへの組み込み例）</h1>
+<p>楽譜ファイル（<code>.bgm.json</code>）を選ぶと、ゲーム内と同じ方法で再生します。イントロを1回流した後、ループ部分を繰り返します。</p>
+<p><input id="file" type="file" accept=".json"></p>
+<p>
+  <button id="play" disabled>再生</button>
+  <button id="stop" disabled>停止（2秒でフェードアウト）</button>
+  音量 <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8">
+</p>
+<p id="info"></p>
+<script>
+  // ---- ここからがゲームに組み込むときの最小構成 ----
+  var player = new CustomBGM.Player({ volume: 0.8 });
+
+  document.getElementById('file').addEventListener('change', function (e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    f.text().then(function (text) {
+      var score = JSON.parse(text);
+      return player.load(score).then(function () {
+        var t = CustomBGM.timing(score);
+        document.getElementById('info').textContent = score.title + ' / BPM ' + t.bpm +
+          ' / イントロ ' + t.introSeconds.toFixed(1) + '秒 / ループ ' + t.loopSeconds.toFixed(1) + '秒（再生方式: ' + player.backend + '）';
+        document.getElementById('play').disabled = false;
+        document.getElementById('stop').disabled = false;
+      });
+    }).catch(function (err) { alert('読み込めませんでした: ' + err.message); });
+  });
+  // ブラウザは「ユーザー操作の後」でないと音を出せないので、再生はクリック等の中で呼ぶ
+  document.getElementById('play').addEventListener('click', function () { player.play({ fadeIn: 0.5 }); });
+  document.getElementById('stop').addEventListener('click', function () { player.stop({ fadeOut: 2 }); });
+  document.getElementById('vol').addEventListener('input', function (e) { player.setVolume(Number(e.target.value), 0.05); });
+</script>
+</body>
+</html>
